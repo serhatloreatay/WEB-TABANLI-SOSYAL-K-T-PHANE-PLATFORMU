@@ -379,9 +379,9 @@ const ContentDetailPage = () => {
   }
 
   return (
-    <div className="content-detail-page" style={{ minHeight: '100vh', backgroundColor: '#f5f5f5', padding: '2rem 0' }}>
-      <div className="container" style={{ padding: '0 20px', maxWidth: '1200px', margin: '0 auto' }}>
-        <div className="content-header" style={{ display: 'flex', gap: '2rem', marginBottom: '2rem', backgroundColor: 'white', padding: '2rem', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+    <div className="content-detail-page">
+      <div className="container">
+        <div className="content-header">
           <img src={posterUrl || '/placeholder.png'} alt={title} className="content-poster-large" />
           <div className="content-info">
             <h1>{title}</h1>

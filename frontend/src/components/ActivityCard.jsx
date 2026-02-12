@@ -206,13 +206,26 @@ const ActivityCard = ({ activity }) => {
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
 
     return (
-      <div className="rating-stars">
-        {'★'.repeat(fullStars)}
-        {hasHalfStar && '☆'}
-        {'☆'.repeat(emptyStars)}
-        <span className="rating-number">({rating}/10)</span>
+      <div className="rating-display-container">
+        <div className="rating-stars">
+          <span className="stars-filled">{'★'.repeat(fullStars)}</span>
+          {hasHalfStar && <span className="star-half">☆</span>}
+          <span className="stars-empty">{'☆'.repeat(emptyStars)}</span>
+        </div>
+        <span className="rating-number">{rating}/10</span>
       </div>
     )
+  }
+
+  // Helper function to truncate review text to 150-200 characters
+  const getReviewExcerpt = (reviewText) => {
+    if (!reviewText) return ''
+    const maxLength = 180 // Ortalama 150-200 arası
+    if (reviewText.length <= maxLength) return reviewText
+    // Kelime bölünmesini önlemek için son boşluğu bul
+    const truncated = reviewText.substring(0, maxLength)
+    const lastSpace = truncated.lastIndexOf(' ')
+    return lastSpace > 150 ? truncated.substring(0, lastSpace) : truncated
   }
 
   // Helper function to parse JSON fields (genres, directors, authors, categories)
@@ -307,14 +320,16 @@ const ActivityCard = ({ activity }) => {
             })()}
           </div>
           {activity.activity_type === 'review' && (
-            <p className="review-excerpt">
-              {activity.review_excerpt}
-              {activity.review_text && activity.review_text.length > 150 && (
-                <Link to={`/${activity.content_type}/${activity.content_id}`} className="read-more">
-                  ...daha fazlasını oku
-                </Link>
-              )}
-            </p>
+            <div className="review-excerpt-container">
+              <p className="review-excerpt">
+                {getReviewExcerpt(activity.review_excerpt || activity.review_text || '')}
+                {activity.review_text && activity.review_text.length > 180 && (
+                  <Link to={`/${activity.content_type}/${activity.content_id}`} className="read-more">
+                    ...daha fazlasını oku
+                  </Link>
+                )}
+              </p>
+            </div>
           )}
         </div>
       </div>

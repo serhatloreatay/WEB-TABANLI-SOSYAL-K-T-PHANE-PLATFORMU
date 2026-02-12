@@ -114,7 +114,7 @@ router.get('/', authenticateToken, async (req, res) => {
             r.user_id,
             r.content_type,
             r.content_id,
-            LEFT(r.review_text, 150) as review_excerpt,
+            LEFT(r.review_text, 200) as review_excerpt,
             r.review_text,
             r.created_at,
             u.username,

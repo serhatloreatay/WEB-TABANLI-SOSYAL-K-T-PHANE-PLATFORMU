@@ -1,10 +1,16 @@
 .home-page {
-  padding: 2rem 0;
+  padding: 2.5rem 0;
+  min-height: calc(100vh - 80px);
 }
 
 .home-page h1 {
   margin-bottom: 2rem;
-  color: #333;
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .feed {
@@ -49,22 +55,21 @@
 }
 
 .load-more-btn {
-  padding: 0.875rem 2rem;
-  background-color: #007bff;
+  padding: 0.875rem 2.5rem;
+  background: var(--gradient-primary);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+  transition: all 0.3s;
+  box-shadow: var(--shadow-md);
 }
 
 .load-more-btn:hover {
-  background-color: #0056b3;
-  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
 }
 
 .load-more-btn:active {
@@ -74,7 +79,11 @@
 .end-of-feed {
   text-align: center;
   padding: 3rem 2rem;
-  color: #666;
+  color: var(--text-secondary);
+  background: var(--bg-primary);
+  border-radius: 16px;
+  margin-top: 2rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .end-of-feed p {

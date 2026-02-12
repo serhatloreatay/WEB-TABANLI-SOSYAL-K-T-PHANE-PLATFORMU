@@ -6,6 +6,46 @@ const pool = require('../config/database');
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const GOOGLE_BOOKS_API_KEY = process.env.GOOGLE_BOOKS_API_KEY;
 
+// TMDB film türü isimlerini ID'lere çevirme tablosu
+// Kullanıcı arayüzünde girilen "Action, Drama" gibi değerleri
+// TMDB'nin beklediği numeric genre ID'lerine dönüştürmek için kullanılır.
+const TMDB_GENRE_NAME_TO_ID = {
+  action: 28,
+  adventure: 12,
+  animation: 16,
+  comedy: 35,
+  crime: 80,
+  documentary: 99,
+  drama: 18,
+  family: 10751,
+  fantasy: 14,
+  history: 36,
+  horror: 27,
+  music: 10402,
+  mystery: 9648,
+  romance: 10749,
+  'science fiction': 878,
+  thriller: 53,
+  war: 10752,
+  western: 37,
+  'tv movie': 10770
+};
+
+// "Action, Drama" -> "28,18"
+function mapGenreNamesToIds(genre) {
+  if (!genre) return null;
+  const parts = genre
+    .split(',')
+    .map(p => p.trim().toLowerCase())
+    .filter(Boolean);
+
+  const ids = parts
+    .map(name => TMDB_GENRE_NAME_TO_ID[name])
+    .filter(Boolean);
+
+  return ids.length ? ids.join(',') : null;
+}
+
 // Universal search (movies and books)
 router.get('/', async (req, res) => {
   try {
@@ -25,87 +65,50 @@ router.get('/', async (req, res) => {
     // Search movies
     if (!type || type === 'movie' || type === 'all') {
       try {
-        // Eğer query yoksa ama filtreler varsa (özellikle yıl), TMDB discover API kullan
+        // Eğer query yoksa ama filtreler varsa (özellikle yıl/tür), TMDB discover API kullan
         if (!query && (year || genre || minRating)) {
-          // Eğer sadece yıl filtresi varsa, TMDB discover API'den o yıldaki tüm filmleri getir
-          if (year && !genre && !minRating) {
-            try {
-              // TMDB discover API ile yıl filtresi
-              const discoverResponse = await axios.get('https://api.themoviedb.org/3/discover/movie', {
-                params: {
-                  api_key: TMDB_API_KEY,
-                  primary_release_year: parseInt(year),
-                  sort_by: 'popularity.desc',
-                  page: page || 1,
-                  language: 'tr-TR'
-                }
-              });
+          const discoverParams = {
+            api_key: TMDB_API_KEY,
+            sort_by: 'popularity.desc',
+            page: page || 1,
+            language: 'tr-TR'
+          };
 
-              results.movies = discoverResponse.data.results.map(movie => ({
-                id: movie.id,
-                title: movie.title,
-                release_date: movie.release_date,
-                poster_url: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null,
-                type: 'movie'
-              }));
-            } catch (discoverError) {
-              console.error('TMDB discover error:', discoverError);
-              // Fallback: database'den arama yap
-              let sqlQuery = `SELECT id, tmdb_id, title, poster_url, release_date, average_rating, total_ratings 
-                             FROM movies WHERE YEAR(release_date) = ? 
-                             ORDER BY average_rating DESC, total_ratings DESC LIMIT 50`;
-              const [dbMovies] = await pool.execute(sqlQuery, [parseInt(year)]);
-              
-              results.movies = dbMovies.map(movie => ({
-                id: movie.tmdb_id || movie.id,
-                title: movie.title,
-                release_date: movie.release_date,
-                poster_url: movie.poster_url,
-                type: 'movie',
-                average_rating: movie.average_rating,
-                total_ratings: movie.total_ratings
-              }));
+          if (year) {
+            discoverParams.primary_release_year = parseInt(year);
+          }
+
+          const genreIds = mapGenreNamesToIds(genre);
+          if (genreIds) {
+            discoverParams.with_genres = genreIds;
+          }
+
+          // minRating verilmişse TMDB'nin vote_average filtresini yaklaşık olarak kullan
+          if (minRating) {
+            const minRatingFloat = parseFloat(minRating);
+            if (!isNaN(minRatingFloat)) {
+              discoverParams['vote_average.gte'] = minRatingFloat;
+              // Çok az oylu filmleri elemek için basit bir alt sınır
+              discoverParams['vote_count.gte'] = 50;
             }
-          } else {
-            // Diğer filtrelerle database'den arama yap
-            let sqlQuery = `SELECT id, tmdb_id, title, poster_url, release_date, average_rating, total_ratings 
-                           FROM movies WHERE 1=1`;
-            const params = [];
-            
-            if (year) {
-              sqlQuery += ` AND YEAR(release_date) = ?`;
-              params.push(parseInt(year));
-            }
-            
-            if (minRating) {
-              const minRatingFloat = parseFloat(minRating);
-              if (!isNaN(minRatingFloat)) {
-                sqlQuery += ` AND average_rating >= ?`;
-                params.push(minRatingFloat);
-              }
-            }
-            
-            // Genre için basit bir LIKE araması (genres JSON field'ında)
-            if (genre) {
-              sqlQuery += ` AND (genres LIKE ? OR genres LIKE ?)`;
-              const genreLower = genre.toLowerCase();
-              params.push(`%"${genreLower}"%`);
-              params.push(`%${genreLower}%`);
-            }
-            
-            sqlQuery += ` ORDER BY average_rating DESC, total_ratings DESC LIMIT 50`;
-            
-            const [dbMovies] = await pool.execute(sqlQuery, params);
-            
-            results.movies = dbMovies.map(movie => ({
-              id: movie.tmdb_id || movie.id,
+          }
+
+          try {
+            const discoverResponse = await axios.get('https://api.themoviedb.org/3/discover/movie', {
+              params: discoverParams
+            });
+
+            results.movies = discoverResponse.data.results.map(movie => ({
+              id: movie.id,
               title: movie.title,
               release_date: movie.release_date,
-              poster_url: movie.poster_url,
-              type: 'movie',
-              average_rating: movie.average_rating,
-              total_ratings: movie.total_ratings
+              poster_url: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null,
+              type: 'movie'
             }));
+          } catch (discoverError) {
+            console.error('TMDB discover error:', discoverError);
+            // Fallback: hiçbir sonuç dönmezse boş dizi gönder
+            results.movies = [];
           }
         } else {
           // Normal TMDB API araması (query varsa)
