@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Kitap ve Film Kütüphanesi Sosyal Platform
 
 Kullanıcıların kişisel kitap ve film kütüphanelerini oluşturabildiği, içerikleri puanlayıp yorumlayabileceği ve sosyal akış üzerinden paylaşım yapabildiği web tabanlı bir sosyal platform.
@@ -208,4 +209,3 @@ Projede karşılaşılan problemler sistematik bir yaklaşımla çözülmektedir
 ## Lisans
 
 Bu proje eğitim amaçlı geliştirilmiştir.
-
